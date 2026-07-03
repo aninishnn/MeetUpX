@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1068296746462",
+    "project_id": "meetupx-32dd2",
+    "storage_bucket": "meetupx-32dd2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1068296746462:android:6106464e5d57934228594f",
+        "android_client_info": {
+          "package_name": "com.meetupx.myapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCOo1jrfvV8FC0Lkg6aCT9j5ycSizVxyHc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
