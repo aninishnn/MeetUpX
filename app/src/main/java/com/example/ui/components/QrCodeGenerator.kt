@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
 import kotlin.random.Random
 
+// ქმნის QR Code-ის ვიზუალურ იმიტაციას.
 @Composable
 fun QrCodeGenerator(
     referenceCode: String,
@@ -27,7 +28,10 @@ fun QrCodeGenerator(
     val seed = remember(referenceCode) {
         referenceCode.hashCode().toLong()
     }
-
+    
+    // იქმნება QR-ის ბადის (matrix) მონაცემები.
+    // remember უზრუნველყოფს, რომ ხელახლა არ გენერირდეს,
+    // თუ referenceCode არ შეცვლილა.
     val grid = remember(seed) {
         val random = Random(seed)
         val matrix = Array(gridSize) { BooleanArray(gridSize) }
