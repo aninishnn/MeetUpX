@@ -6,18 +6,23 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface EventDao {
+
+    // აბრუნებს ყველა ღონისძიების რეალურ დროში განახლებად სიას
     @Query("SELECT * FROM events")
     fun getAllEventsFlow(): Flow<List<EventEntity>>
 
+    // პოულობს კონკრეტულ ღონისძიებას ID-ის მიხედვით
     @Query("SELECT * FROM events WHERE id = :id")
     suspend fun getEventById(id: String): EventEntity?
 
+    // ამატებს ან ანახლებს ერთ ღონისძიებას
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertEvent(event: EventEntity)
 
+    // ამატებს ან ანახლებს რამდენიმე ღონისძიებას
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertEvents(events: List<EventEntity>)
-
+   
     @Delete
     suspend fun deleteEvent(event: EventEntity)
 }
