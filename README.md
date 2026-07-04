@@ -90,9 +90,9 @@ MeetUpX helps users in Georgia connect through real-life events such as:
 
 ---
 
-![Start Page](images/StartPage.png)
-![Sign Up](images/SignUp.png)
-![Log In](images/LogIn.png)
-![APP](images/app.mov)
+![Start Page](app/images/StartPage.png)
+![Sign Up](app/images/SignUp.png)
+![Log In](app/images/LogIn.png)
+![APP](app/images/app.mov)
 
 
