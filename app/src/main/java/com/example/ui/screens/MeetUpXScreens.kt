@@ -27,7 +27,6 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -46,7 +45,6 @@ import com.example.ui.theme.*
 import com.example.ui.viewmodel.MeetUpXViewModel
 import com.example.ui.viewmodel.PopupState
 import kotlinx.coroutines.launch
-import java.util.UUID
 import kotlin.math.roundToInt
 import androidx.compose.ui.composed
 import androidx.compose.foundation.interaction.MutableInteractionSource
