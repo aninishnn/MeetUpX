@@ -27,24 +27,34 @@ import android.util.Log
 import kotlinx.coroutines.tasks.await
 
 @OptIn(ExperimentalCoroutinesApi::class)
+// Repository პასუხისმგებელია მონაცემების მართვაზე
+// მუშაობს როგორც Room-ის ლოკალურ ბაზასთან, ასევე Firebase-თან
 class MeetUpXRepository(
     private val db: MeetUpXDatabase,
     private val firebaseAuth: FirebaseAuth,
     private val firebaseDb: FirebaseDatabase
 ){
+    // DAO-ები გამოიყენება Room Database-ში სხვადასხვა ცხრილთან სამუშაოდ
     private val eventDao = db.eventDao()
     private val joinedEventDao = db.joinedEventDao()
     private val savedEventDao = db.savedEventDao()
     private val notificationDao = db.notificationDao()
     private val userProfileDao = db.userProfileDao()
 
+    // ინახავს მიმდინარე ავტორიზებული მომხმარებლის პროფილს
+    // StateFlow-ის საშუალებით UI ავტომატურად მიიღებს ცვლილებებს
     private val _currentUserFlow = MutableStateFlow<UserProfileEntity?>(null)
     val currentUserFlow: StateFlow<UserProfileEntity?> = _currentUserFlow.asStateFlow()
 
+    // იღებს მიმდინარე მომხმარებლის ID-ს
+    // თუ პროფილი ჯერ არ არის ჩატვირთული, გამოიყენებს FirebaseAuth-ის uid-ს
     private val currentUserIdFlow = currentUserFlow
         .map { it?.id ?: firebaseAuth.currentUser?.uid.orEmpty() }
         .distinctUntilChanged()
 
+    // იტვირთება მიმდინარე მომხმარებლის პროფილი Firebase-დან.
+    // წარმატების შემთხვევაში ინახება როგორც Room-ში,
+    // ასევე StateFlow-ში UI-ს გასაახლებლად.
     suspend fun loadCurrentUser() {
         val user = firebaseAuth.currentUser ?: return
         runCatching {
@@ -56,6 +66,9 @@ class MeetUpXRepository(
         }
     }
 
+    // თუ ლოკალური ბაზა ცარიელია,
+    // ჩაიტვირთება საწყისი (default) ივენთები
+    // და დაემატება მისალმების ნოტიფიკაცია.
     suspend fun checkAndPrepopulateEvents() {
         val currentEvents = eventDao.getAllEventsFlow().first()
         if (currentEvents.isEmpty()) {
@@ -78,7 +91,7 @@ class MeetUpXRepository(
             notificationDao.insertNotification(
                 NotificationEntity(
                     id = "notif_welcome",
-                    title = "Welcome to MeetUpX! рџљЂ",
+                    title = "Welcome to MeetUpX!",
                     message = "Discover events using Tinder-style swipe cards. Swipe Right to Join, Left to Skip, and Up to Save!",
                     isRead = false
                 )
@@ -88,6 +101,11 @@ class MeetUpXRepository(
         runCatching { syncRemoteEvents() }
     }
 
+    // ახალი მომხმარებლის რეგისტრაცია.
+    // 1. იქმნება Firebase Authentication-ში.
+    // 2. ინახება პროფილი Realtime Database-ში.
+    // 3. ინახება Room Database-ში.
+    // 4. განახლდება currentUserFlow.
     suspend fun register(
         name: String,
         email: String,
@@ -124,6 +142,9 @@ class MeetUpXRepository(
         }
     }
 
+    // მომხმარებლის ავტორიზაცია.
+    // ავტორიზაციის შემდეგ იტვირთება პროფილი Firebase Database-დან.
+    // თუ პროფილი არ არსებობს, შეიქმნება დროებითი პროფილი.
     suspend fun signIn(email: String, password: String): Result<UserProfileEntity> {
         return runCatching {
             val trimmedEmail = email.trim()
@@ -159,11 +180,14 @@ class MeetUpXRepository(
         }
     }
 
+    // მომხმარებლის გამოსვლა სისტემიდან.
+    // ასევე იწმინდება მიმდინარე მომხმარებლის StateFlow.
     fun logout() {
         runCatching { firebaseAuth.signOut() }
         _currentUserFlow.value = null
     }
 
+    // პროფილის რედაქტირება
     suspend fun saveProfile(profile: UserProfileEntity) {
         val uid = firebaseAuth.currentUser?.uid ?: error("User not authenticated")
         val profileToSave = profile.copy(id = uid)
@@ -183,6 +207,9 @@ class MeetUpXRepository(
 
     suspend fun getEventById(id: String): EventEntity? = eventDao.getEventById(id)
 
+    // ქმნის ახალ ივენთს.
+    // ინახავს მას Room-ში და Firebase-ში,
+    // შემდეგ ამატებს ნოტიფიკაციას წარმატებული გამოქვეყნების შესახებ.
     suspend fun createEvent(
         title: String,
         description: String,
@@ -219,6 +246,8 @@ class MeetUpXRepository(
         )
     }
 
+    // შლის ივენთს როგორც ლოკალური ბაზიდან,
+    // ასევე Firebase Database-დან.
     suspend fun deleteEvent(event: EventEntity) {
         eventDao.deleteEvent(event)
         runCatching {
@@ -229,6 +258,10 @@ class MeetUpXRepository(
     fun getJoinedEventsFlow(): Flow<List<JoinedEventEntity>> =
         currentUserIdFlow.flatMapLatest { userId -> joinedEventDao.getJoinedEventsFlow(userId) }
 
+    // მომხმარებელი უერთდება ივენთს.
+    // გენერირდება QR კოდის უნიკალური იდენტიფიკატორი,
+    // ინფორმაცია ინახება Room-სა და Firebase-ში,
+    // შემდეგ იგზავნება ნოტიფიკაცია.
     suspend fun joinEvent(eventId: String) {
         val userId = firebaseAuth.currentUser?.uid ?: error("User not authenticated")
         val qrCodeRef = "MUX-QR-" + UUID.randomUUID().toString().replace("-", "").take(8).uppercase()
@@ -261,6 +294,8 @@ class MeetUpXRepository(
         }
     }
 
+    // მომხმარებელი ტოვებს ივენთს.
+    // ინფორმაცია იშლება Room-იდან და Firebase-იდან.
     suspend fun leaveEvent(eventId: String) {
         val userId = firebaseAuth.currentUser?.uid ?: error("User not authenticated")
         joinedEventDao.leaveEvent(userId, eventId)
@@ -281,6 +316,9 @@ class MeetUpXRepository(
     fun getSavedEventsFlow(): Flow<List<SavedEventEntity>> =
         currentUserIdFlow.flatMapLatest { userId -> savedEventDao.getSavedEventsFlow(userId) }
 
+    // ინახავს ივენთს Saved Events სიაში.
+    // მონაცემები ინახება Room-სა და Firebase-ში,
+    // შემდეგ ემატება შესაბამისი ნოტიფიკაცია.
     suspend fun saveEvent(eventId: String) {
         val userId = firebaseAuth.currentUser?.uid ?: error("User not authenticated")
         val saved = SavedEventEntity(
@@ -311,6 +349,7 @@ class MeetUpXRepository(
         }
     }
 
+    // შლის ივენთს Saved Events სიიდან
     suspend fun unsaveEvent(eventId: String) {
         val userId = firebaseAuth.currentUser?.uid ?: error("User not authenticated")
         savedEventDao.unsaveEvent(userId, eventId)
