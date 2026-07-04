@@ -2,6 +2,7 @@ package com.example.data.repository
 
 import com.example.data.model.Event
 
+// აპლიკაციის საწყის ღონისძიებების სიას ინახავს
 class EventRepository {
     fun getRealisticEvents(): List<Event> {
         return listOf(
