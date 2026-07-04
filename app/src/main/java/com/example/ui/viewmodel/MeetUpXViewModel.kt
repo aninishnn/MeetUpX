@@ -12,30 +12,37 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import android.util.Log
 
+// ViewModel აკავშირებს UI-ს Repository-სთან.
+// აქ იმართება ეკრანების მდგომარეობა, მომხმარებლის მოქმედებები
+// და მონაცემების მიღება/განახლება.
 class MeetUpXViewModel(application: Application) : AndroidViewModel(application) {
+    // Room Database-ის ინიციალიზაცია
     private val db = MeetUpXDatabase.getDatabase(application)
+    // Repository უზრუნველყოფს Room-სა და Firebase-თან მუშაობას
     private val repository = MeetUpXRepository(
         db,
         FirebaseAuth.getInstance(),
         FirebaseDatabase.getInstance()
     )
 
-    // Active Navigation Screen State
+    // ინახავს ამჟამად გახსნილ ეკრანს
     private val _currentScreen = MutableStateFlow<String>("splash")
     val currentScreen: StateFlow<String> = _currentScreen.asStateFlow()
 
+    // მომხმარებლის ავტორიზაციის მიმდინარე მდგომარეობა
     private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
-    // Selected Event for details screen
+    // ინახავს იმ ღონისძიების ID-ს,
+    // რომლის დეტალებიც უნდა გამოჩნდეს.
     private val _selectedEventId = MutableStateFlow<String?>(null)
     val selectedEventId: StateFlow<String?> = _selectedEventId.asStateFlow()
 
-    // Selected Category Filter for home screen
+    // არჩეული კატეგორიის ფილტრი
     private val _selectedCategory = MutableStateFlow<String>("All")
     val selectedCategory: StateFlow<String> = _selectedCategory.asStateFlow()
 
-    // Selected Georgian City Filter for home screen
+    // არჩეული ქალაქის ფილტრი
     private val _selectedCity = MutableStateFlow<String>("All")
     val selectedCity: StateFlow<String> = _selectedCity.asStateFlow()
 
@@ -44,18 +51,20 @@ class MeetUpXViewModel(application: Application) : AndroidViewModel(application)
     private val _themePreference = MutableStateFlow(sharedPrefs.getString("theme_pref", "system") ?: "system")
     val themePreference: StateFlow<String> = _themePreference.asStateFlow()
 
-    // Reactive sub-tab state for My Events ("Joined", "Saved", "Created")
     private val _myEventsSubTab = MutableStateFlow<String>("Joined")
     val myEventsSubTab: StateFlow<String> = _myEventsSubTab.asStateFlow()
 
-    // Flows from database
+    // Repository-დან მიღებული Flow-ები
     val currentUser = repository.currentUserFlow
     val allEvents = repository.getAllEventsFlow()
     val joinedEvents = repository.getJoinedEventsFlow()
     val savedEvents = repository.getSavedEventsFlow()
     val notifications = repository.getNotificationsFlow()
 
-    // Main App State combined for the discover deck (combines both Category & Georgian City filters)
+    // აერთიანებს ყველა Flow-ს და აბრუნებს
+    // მხოლოდ იმ ღონისძიებებს,
+    // რომლებიც ჯერ არც Joined-ია,
+    // არც Saved და აკმაყოფილებს ფილტრებს.
     val discoverEvents: StateFlow<List<EventEntity>> = combine(
         allEvents,
         joinedEvents,
@@ -78,7 +87,7 @@ class MeetUpXViewModel(application: Application) : AndroidViewModel(application)
         initialValue = emptyList()
     )
 
-    // Detailed lists for My Events tab
+    // აბრუნებს Joined Events-ის სრულ ინფორმაციას
     val joinedEventsDetails: StateFlow<List<EventEntity>> = combine(
         allEvents,
         joinedEvents
@@ -91,6 +100,7 @@ class MeetUpXViewModel(application: Application) : AndroidViewModel(application)
         initialValue = emptyList()
     )
 
+    // აბრუნებს Saved Events-ის სრულ ინფორმაციას
     val savedEventsDetails: StateFlow<List<EventEntity>> = combine(
         allEvents,
         savedEvents
@@ -102,7 +112,8 @@ class MeetUpXViewModel(application: Application) : AndroidViewModel(application)
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = emptyList()
     )
-
+    
+    // აბრუნებს მხოლოდ მომხმარებლის მიერ შექმნილ ღონისძიებებს.
     val myCreatedEventsDetails: StateFlow<List<EventEntity>> = allEvents.map { events ->
         events.filter { it.isCustom }
     }.stateIn(
@@ -111,11 +122,9 @@ class MeetUpXViewModel(application: Application) : AndroidViewModel(application)
         initialValue = emptyList()
     )
 
-    // Interactive Bottom Nav Tab selection
     private val _activeTab = MutableStateFlow<String>("home")
     val activeTab: StateFlow<String> = _activeTab.asStateFlow()
 
-    // Active popup/toast message state
     private val _popupMessage = MutableStateFlow<PopupState?>(null)
     val popupMessage: StateFlow<PopupState?> = _popupMessage.asStateFlow()
 
@@ -223,14 +232,15 @@ class MeetUpXViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    // SWIPE CARD ACTIONS
+    // აბრუნებს მხოლოდ მომხმარებლის მიერ შექმნილ ღონისძიებებს
     fun handleSwipeRight(eventId: String) {
         viewModelScope.launch {
             repository.joinEvent(eventId)
             showPopup("Joined Event!", "Check your QR ticket in 'My Events'!", "success")
         }
     }
-
+    
+    // Left Swipe - ღონისძიების გამოტოვება
     fun handleSwipeLeft(eventId: String) {
         viewModelScope.launch {
             // Simulated skipped action - simply show a brief visual acknowledgement
@@ -238,6 +248,7 @@ class MeetUpXViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    // Up Swipe - ღონისძიების შენახვა
     fun handleSwipeUp(eventId: String) {
         viewModelScope.launch {
             repository.saveEvent(eventId)
@@ -245,7 +256,7 @@ class MeetUpXViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    // EVENT MANAGEMENT
+    // ახალი ღონისძიების შექმნა    
     fun createEvent(title: String, description: String, category: String, date: String, time: String, location: String, imageName: String) {
         viewModelScope.launch {
             repository.createEvent(title, description, category, date, time, location, imageName)
@@ -276,7 +287,7 @@ class MeetUpXViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    // USER PROFILE EDIT
+    // მომხმარებლის პროფილის განახლება
     fun updateProfile(name: String, bio: String, university: String) {
         viewModelScope.launch {
             val current = currentUser.value ?: return@launch
@@ -299,7 +310,6 @@ class MeetUpXViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    // Helper for showing animated visual popup feedback
     private fun showPopup(title: String, message: String, type: String) {
         _popupMessage.value = PopupState(title, message, type)
     }
@@ -308,7 +318,7 @@ class MeetUpXViewModel(application: Application) : AndroidViewModel(application)
         _popupMessage.value = null
     }
 
-    // Retrieve Ticket QR code reference for details screen
+    // აბრუნებს Join-ისას გენერირებულ QR Reference-ს
     fun getQrCodeReferenceForEvent(eventId: String): StateFlow<String> {
         return joinedEvents.map { list ->
             list.find { it.eventId == eventId }?.qrCodeReference ?: "MUX-QR-PENDING"
