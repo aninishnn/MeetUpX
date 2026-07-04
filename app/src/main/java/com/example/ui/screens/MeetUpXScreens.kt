@@ -59,11 +59,16 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.unit.Dp
 import com.example.ui.viewmodel.AuthState
 
+// ამ ფაილში განთავსებულია აპლიკაციის ძირითადი Compose UI ეკრანები,
+// დამხმარე კომპონენტები, ანიმაციები და ეკრანებს შორის ნავიგაცია.
+
 val SketchCardShape = RoundedCornerShape(topStart = 24.dp, topEnd = 30.dp, bottomStart = 28.dp, bottomEnd = 22.dp)
 val SketchButtonShape = RoundedCornerShape(topStart = 16.dp, topEnd = 20.dp, bottomStart = 18.dp, bottomEnd = 14.dp)
 val SketchSmallShape = RoundedCornerShape(topStart = 12.dp, topEnd = 16.dp, bottomStart = 14.dp, bottomEnd = 10.dp)
 
 
+// Modifier, რომელიც ღილაკზე დაჭერისას
+// ამცირებს ელემენტის ზომას და ქმნის "Bounce" ეფექტს.
 fun Modifier.bounceClickable(
     interactionSource: MutableInteractionSource = MutableInteractionSource(),
     onClick: () -> Unit
@@ -89,12 +94,15 @@ fun Modifier.bounceClickable(
         )
 }
 
+// მონაცემთა კლასი, რომელიც აღწერს ღონისძიების კატეგორიას.
 data class CategoryData(
     val name: String,
     val icon: ImageVector,
     val color: Color
 )
 
+// აპლიკაციაში არსებული ყველა კატეგორია,
+// რომლებიც გამოიყენება ფილტრაციასა და UI-ში.
 val categoryList = listOf(
     CategoryData("All", Icons.Rounded.Home, Color(0xFF4F46E5)),
     CategoryData("Music", Icons.Rounded.MusicNote, Color(0xFFE11D48)),
@@ -116,6 +124,8 @@ val categoryList = listOf(
     CategoryData("Culture & Festivals", Icons.Rounded.Festival, Color(0xFFD97706))
 )
 
+// ხატავს QR Code-ის ვიზუალურ იმიტაციას,
+// რომელიც გამოიყენება ღონისძიების ბილეთის ეკრანზე.
 @Composable
 fun QRCodeTicket(reference: String, modifier: Modifier = Modifier, color: Color = BrandIndigo) {
     Canvas(modifier = modifier) {
@@ -172,6 +182,8 @@ fun QRCodeTicket(reference: String, modifier: Modifier = Modifier, color: Color 
     }
 }
 
+// აპლიკაციის მთავარი Compose ფუნქცია.
+// აქ იმართება ნავიგაცია ყველა ეკრანს შორის.
 @Composable
 fun MeetUpXApp(viewModel: MeetUpXViewModel) {
     val currentScreen by viewModel.currentScreen.collectAsState()
@@ -252,8 +264,11 @@ fun MeetUpXApp(viewModel: MeetUpXViewModel) {
     }
 }
 
+// აპლიკაციის საწყისი Splash Screen,
+// რომელიც რამდენიმე წამით აჩვენებს ლოგოს.
 @Composable
 fun SplashScreen(onNavigateNext: () -> Unit) {
+    // უსასრულო ანიმაცია ლოგოს Pulse ეფექტისთვის.
     val infiniteTransition = rememberInfiniteTransition(label = "splash")
     val pulseScale by infiniteTransition.animateFloat(
         initialValue = 0.9f,
@@ -264,12 +279,13 @@ fun SplashScreen(onNavigateNext: () -> Unit) {
         ),
         label = "pulse"
     )
-
+    // 3 წამის შემდეგ ხდება შემდეგ ეკრანზე გადასვლა.
     LaunchedEffect(Unit) {
         kotlinx.coroutines.delay(3000)
         onNavigateNext()
     }
 
+    // ამოწმებს ჩართულია თუ არა Dark Theme
     val isDark = MaterialTheme.colorScheme.background == DarkBackground
     val startBg = if (isDark) DarkBackground else CreamBackground
     val endBg = if (isDark) Color(0xFF1E1B4B) else Color(0xFFFEE2E2)
@@ -356,6 +372,8 @@ fun SplashScreen(onNavigateNext: () -> Unit) {
     }
 }
 
+// Welcome Screen - აპლიკაციის საწყისი ეკრანი,
+// სადაც მომხმარებელს შეუძლია რეგისტრაცია ან ავტორიზაცია.
 @Composable
 fun WelcomeScreen(onGoToLogin: () -> Unit, onGoToRegister: () -> Unit) {
     Box(
@@ -372,7 +390,6 @@ fun WelcomeScreen(onGoToLogin: () -> Unit, onGoToRegister: () -> Unit) {
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Branding Top
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center
@@ -398,7 +415,6 @@ fun WelcomeScreen(onGoToLogin: () -> Unit, onGoToRegister: () -> Unit) {
                 )
             }
 
-            // Beautiful Central Illustration (Matching Duolingo/Headspace style)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -425,7 +441,6 @@ fun WelcomeScreen(onGoToLogin: () -> Unit, onGoToRegister: () -> Unit) {
                 }
             }
 
-            // Marketing copy
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.fillMaxWidth()
@@ -452,7 +467,6 @@ fun WelcomeScreen(onGoToLogin: () -> Unit, onGoToRegister: () -> Unit) {
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Action CTAs
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -495,11 +509,14 @@ fun WelcomeScreen(onGoToLogin: () -> Unit, onGoToRegister: () -> Unit) {
     }
 }
 
+// Login Screen - მომხმარებლის ავტორიზაციის ეკრანი.
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(viewModel: MeetUpXViewModel, onBack: () -> Unit) {
+    // ინახავს მომხმარებლის მიერ შეყვანილ ელფოსტასა და პაროლს.
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    // ViewModel-დან ავტორიზაციის მიმდინარე მდგომარეობის მიღება.
     val authState by viewModel.authState.collectAsState()
 
     LaunchedEffect(authState) {
@@ -537,7 +554,7 @@ fun LoginScreen(viewModel: MeetUpXViewModel, onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "Welcome Back! 👋",
+                text = "Welcome Back!",
                 fontSize = 32.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = TextPrimary
