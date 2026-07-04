@@ -14,13 +14,16 @@ import com.example.ui.theme.MyApplicationTheme
 import com.example.ui.screens.MeetUpXApp
 import com.example.ui.viewmodel.MeetUpXViewModel
 
+// ინიციალიზდება ViewModel და იტვირთება Compose UI
 class MainActivity : ComponentActivity() {
   private val viewModel: MeetUpXViewModel by viewModels()
 
+  // ViewModel-ის შექმნა, რომელიც მართავს აპლიკაციის მდგომარეობას
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     enableEdgeToEdge()
     setContent {
+      // ViewModel-დან მომხმარებლის მიერ არჩეული Theme Preference-ის მიღება
       val themePref by viewModel.themePreference.collectAsState()
       val darkTheme = when (themePref) {
           "light" -> false
@@ -28,9 +31,11 @@ class MainActivity : ComponentActivity() {
           else -> androidx.compose.foundation.isSystemInDarkTheme()
       }
       MyApplicationTheme(darkTheme = darkTheme) {
+        // ძირითადი კონტეინერი, სადაც იტვირთება მთელი აპლიკაცია
         Surface(
           modifier = Modifier.fillMaxSize()
         ) {
+           // აპლიკაციის მთავარი Compose ეკრანი
           MeetUpXApp(viewModel = viewModel)
         }
       }
